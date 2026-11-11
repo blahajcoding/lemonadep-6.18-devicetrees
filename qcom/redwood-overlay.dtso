@@ -1,0 +1,296 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Xiaomi Redmi Note 12 Pro 5G / POCO X5 Pro 5G (redwood)
+ *
+ * Starts from Qualcomm's Yupik IDP board, which the 5.4 redwood device
+ * tree was also built on.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include "yupik-idp.dtsi"
+#include "display/redwood-sde-pinctrl.dtsi"
+#include "display/redwood-sde.dtsi"
+#include "display/redwood-sde-display.dtsi"
+#include <dt-bindings/clock/qcom,gpucc-sc7280.h>
+#include <dt-bindings/clock/qcom,aop-qmp.h>
+#include "gpu/yupik-gpu.dtsi"
+#include "gpu/yupik-gpu-pwrlevels.dtsi"
+#include "redwood-touch.dtsi"
+#include "redwood-wlan.dtsi"
+#include "redwood-ipa.dtsi"
+#include "redwood-fastrpc.dtsi"
+#include "redwood-video.dtsi"
+#include "redwood-bt.dtsi"
+#include "redwood-camera.dtsi"
+#include "redwood-fingerprint.dtsi"
+#include "redwood-haptics.dtsi"
+#include "redwood-ir.dtsi"
+#include "redwood-nfc.dtsi"
+#include "redwood-crypto.dtsi"
+#include "redwood-thermal.dtsi"
+#include "redwood-touchfeature.dtsi"
+#include "redwood-audio/yupik-audio.dtsi"
+#include "redwood-audio/redwood-audio-overlay.dtsi"
+
+/*
+ * Not on redwood (the ADSP reads the battery), and 6.12's adc5 rejects
+ * V_I_BAT_THERM, which failed the whole PMK8350 ADC: no board thermistors,
+ * no ADC_TM, and both PMIC temp alarms stuck waiting for it.
+ */
+&pmk8350_vadc {
+	/delete-node/ pm7325b_batt_therm;
+};
+
+/ {
+	model = "Xiaomi redwood (SM7325)";
+	compatible = "xiaomi,redwood", "qcom,yupik-idp", "qcom,yupik", "qcom,idp";
+	qcom,msm-id = <475 0x10000>, <515 0x10000>;
+	qcom,board-id = <0x1000B 0>;
+};
+
+/*
+ * Keep pstore in the region the 5.4 kernel uses. Without a record size
+ * ramoops saves no oops or panic dumps, only the console and pmsg, so give
+ * dumps half of it: 8 records of 256K, then 1M each for console and pmsg.
+ */
+&reserved_memory {
+	ramoops@b0000000 {
+		compatible = "ramoops";
+		reg = <0x0 0xb0000000 0x0 0x400000>;
+		record-size = <0x40000>;
+		console-size = <0x100000>;
+		pmsg-size = <0x100000>;
+		mem-type = <2>;
+	};
+};
+
+&{/soc/qcom_ramoops} {
+	status = "disabled";
+};
+
+/*
+ * Give Android back the memory 6.12 sets aside for things redwood's
+ * firmware doesn't run. Its 5.4 device tree has all of these disabled and
+ * none of the carveouts: the trusted VM and its neuron and qrtr channels
+ * (120 MB), the ramdump table (44 MB, ramdump is off on these phones) and
+ * qcom_ramoops' region (2 MB; the ramoops above is the one in use).
+ */
+&{/soc/qcom,trustedvm@d0800000} {
+	status = "disabled";
+};
+
+&{/soc/qcom,guestvm_loader} {
+	status = "disabled";
+};
+
+&{/soc/qcom,svm_neuron_block} {
+	status = "disabled";
+};
+
+&{/soc/qrtr-haven} {
+	status = "disabled";
+};
+
+&{/soc/mem_dump} {
+	status = "disabled";
+};
+
+&{/reserved-memory/pil_trustedvm_region@d0800000} {
+	status = "disabled";
+};
+
+&{/reserved-memory/neuron_block@0} {
+	status = "disabled";
+};
+
+&{/reserved-memory/neuron_block@1} {
+	status = "disabled";
+};
+
+&{/reserved-memory/qrtr-shmem} {
+	status = "disabled";
+};
+
+&{/reserved-memory/dump_mem_region} {
+	status = "disabled";
+};
+
+&{/reserved-memory/ramoops-region} {
+	status = "disabled";
+};
+
+/*
+ * The CPUCP log needs SCMI, which redwood's CPUCP doesn't have (it stays
+ * deferred; 5.4 had no such node), and the IOMMU self test is for
+ * debugging only and fails to link to the GPU SMMU
+ */
+/*
+ * Bluetooth audio (A2DP offload and SCO) goes to the WCN6750 over SLIMbus.
+ * yupik leaves the NGD controller off with nothing under it; lahaina has
+ * it on with the BT slave (bt_fm_slim) as below.
+ */
+&slim_msm {
+	status = "okay";
+
+	ngd@1 {
+		reg = <1>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		btfmslim_codec: btfmslim-driver {
+			compatible = "slim217,221";
+			reg = <1 0>;
+		};
+	};
+};
+
+&{/soc/qcom,cpucp_log@18509C00} {
+	status = "disabled";
+};
+
+&{/soc/iommu_test_device} {
+	status = "disabled";
+};
+
+/*
+ * redwood's firmware uses the older Yupik memory map, the one the 5.4
+ * kernel describes: AOP starts at 0x80600000, the ADSP takes 64M, the CDSP
+ * sits at 0x9c700000 and the CVP at 0x8b200000. Qualcomm's 6.12 map would
+ * put the CDSP inside the ADSP's memory here and leave the CVP unreserved.
+ */
+&xbl_aop_mem {
+	reg = <0x0 0x80600000 0x0 0x260000>;
+};
+
+&pil_adsp_mem {
+	reg = <0x0 0x86700000 0x0 0x4000000>;
+};
+
+&pil_cdsp_mem {
+	reg = <0x0 0x9c700000 0x0 0x1e00000>;
+};
+
+&removed_mem {
+	reg = <0x0 0xc0000000 0x0 0x6800000>;
+};
+
+&reserved_memory {
+	/* where the 5.4 PIL loads venus, which TZ expects */
+	pil_venus_mem: cvp@8b200000 {
+		no-map;
+		reg = <0x0 0x8b200000 0x0 0x500000>;
+	};
+};
+
+/* redwood has no PMR735A on the SPMI bus, and no SD card slot */
+&pmr735a_1 {
+	status = "disabled";
+};
+
+&pmr735a_temp_alarm {
+	status = "disabled";
+};
+
+&sdhc_2 {
+	status = "disabled";
+};
+
+/*
+ * No serial console: the 6.12 GKI driver makes the debug UART a console,
+ * and at 115200 baud each kernel warning took ~650 ms to print with the
+ * console lock held, long enough to drop display frames and time out the
+ * touch SPI transfers. pstore still keeps the console log.
+ */
+&qupv3_se5_2uart {
+	status = "disabled";
+};
+
+/* The display RSC finds its RPMh controller through this */
+&disp_rsc_drv0 {
+	sde_rsc_rpmh {
+		compatible = "qcom,sde-rsc-rpmh";
+		cell-index = <0>;
+	};
+};
+
+/*
+ * redwood's charger firmware is Xiaomi's. The driver sends it a thermal level
+ * from its own table of 16; the currents below, redwood's from 10A (67W
+ * charging) down to 500mA, only feed the CLO driver's bookkeeping.
+ */
+&battery_charger {
+	qcom,xiaomi-battery-props;
+	/*
+	 * Xiaomi's charger firmware is told when the screen goes off, and
+	 * charges harder then. Either panel may be fitted.
+	 */
+	qcom,display-panels = <&dsi_m20_36_02_0a_dsc_vid &dsi_m20_42_0d_0b_dsc_vid>;
+	qcom,thermal-mitigation = <10000000 9500000 9000000 8500000 8000000
+				   7500000 7000000 6500000 6000000 5500000
+				   5000000 4500000 4000000 3500000 3000000
+				   2500000 2000000 1500000 1000000 500000>;
+};
+
+/*
+ * The PMIC keeps a log of every power on and off, with its reason, in
+ * SDAM 5 of the PMK8350, as on lahaina; read it so a reset says why.
+ */
+&soc {
+	pmic-pon-log {
+		compatible = "qcom,pmic-pon-log";
+		nvmem = <&pmk8350_sdam_5>;
+		nvmem-names = "pon_log";
+	};
+};
+
+/*
+ * yupik.dtsi spells this "Power-domains", so CPU2 was never part of the
+ * cluster domain: with OS-initiated PSCI the cluster could power down
+ * while CPU2 was still running, and the phone reset every few minutes.
+ * Set it here too, for a base DTB built before the fix.
+ */
+&CPU_PD2 {
+	power-domains = <&CLUSTER_PD>;
+};
+
+/*
+ * redwood has no motor on the PMIC LDO vibrator output: the vibrator is the
+ * AW86927 (redwood-haptics.dtsi). With this node probed it takes
+ * /sys/class/leds/vibrator, the vibrator HAL drives it and nothing buzzes.
+ */
+&pm7250b_vib {
+	status = "disabled";
+};
+
+/*
+ * The socd trip pauses all four big cores below 10% battery. redwood's
+ * worn batteries drop from the teens straight to 1% under load, so the
+ * phone crawled for as long as the gauge took to climb back past 10%,
+ * even on the charger. The PMIC BCL trips still pause them when the
+ * battery voltage really sags; keep socd for the thermal HAL's own trip
+ * only.
+ */
+&socd_trip {
+	temperature = <101>;
+};
+
+/*
+ * The pm7325b BCL trips sit at 1 with a hysteresis of 1, and 6.12 clears a
+ * trip only once the reading drops below trip minus hysteresis, here 0. The
+ * BCL sensor reads 0 when its alarm is gone, so one voltage sag under load
+ * left all four big cores paused until reboot (the launcher at 90% on the
+ * little cores). Clear at 0, as pm8350c's BCL trips already do.
+ */
+&b_bcl_lvl0 {
+	hysteresis = <0>;
+};
+
+&b_bcl_lvl1 {
+	hysteresis = <0>;
+};
+
+&b_bcl_lvl2 {
+	hysteresis = <0>;
+};
