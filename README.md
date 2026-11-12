@@ -8,7 +8,8 @@ Qualcomm's 6.12 kernel platform to Android Common Kernel `android17-6.18`
 |---|---|
 | [redwood-6.18-kernel](https://github.com/suvojeet-sengupta/redwood-6.18-kernel) | ACK `android17-6.18` + Qualcomm's common delta + soc-repo, redwood fixes |
 | [redwood-6.18-modules](https://github.com/suvojeet-sengupta/redwood-6.18-modules) | vendor trees (display, GPU, audio, securemsm, mm-drivers, camera, video, wlan, data), redwood drivers, bring-up tools |
-| [device_xiaomi_redwood_clo `6.18`](https://github.com/suvojeet-sengupta/device_xiaomi_redwood_clo/tree/6.18) | the Android device tree for 6.18 |
+| [device_xiaomi_redwood_clo `6.18`](https://github.com/suvojeet-sengupta/device_xiaomi_redwood_clo/tree/6.18) | the Android device tree for 6.18 (`6.18-setup`: manifest and build scripts) |
+| [device_xiaomi_redwood-kernel-6.18](https://github.com/suvojeet-sengupta/device_xiaomi_redwood-kernel-6.18) | the prebuilt kernel, modules, dtb and dtbo for ROM builds |
 | redwood-6.18-devicetrees (this one) | the redwood devicetree, as carried over from 6.12 |
 
 The 6.12 notes this port started from are in [README-6.12.md](README-6.12.md)
@@ -74,7 +75,7 @@ Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 |---|---|---|
 | AOSPA on 6.18 (RAM boot) | ✅ | home screen, adb; first boot on an empty /data takes about 6 minutes |
 | AOSPA on 6.18 with the real /data | ✅ | slot b boots it with `pack-daily618.sh`'s image; KernelSU Next v3.4.2 root with its `kernelsu.ko` rebuilt for this kernel (vermagic, ACK VFS namespace import) |
-| Flashable build from the device tree | ⬜ | needs a `device_xiaomi_redwood-kernel-6.18` prebuilt |
+| Flashable build from the device tree | 🟡 | [`device_xiaomi_redwood-kernel-6.18`](https://github.com/suvojeet-sengupta/device_xiaomi_redwood-kernel-6.18) prebuilt, device tree `6.18` (default branch) and `6.18-setup` are ready; no ROM built with them yet |
 
 ## Test rules
 
