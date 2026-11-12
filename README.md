@@ -57,7 +57,7 @@ Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 | Mobile data (IPA, rmnet) | ✅ | works on both SIMs. datarmnet was built without `CONFIG_IPA3`, so `ipa_register_notifier()` was the failing stub and every `rmnet_data` link failed with -ENOMEM; netmgrd's `RTM_NEWLINK` also needs `redwood.nlmsg_legacy` (or the device tree's xperm rules) |
 | Camera | ✅ | preview works. The HFI queues came from the cached system heap, so the non-coherent ICP never saw its init command (-110); and LRME, which the HAL needs, was not built |
 | Video (msm-vidc) | ✅ | codec sessions open: empty vb2 wait hooks, `V4L2_FL_USES_V4L2_FH` kept, controls wired to the instance |
-| Audio | 🟡 | lahaina modules load, sound card registers; not checked in AOSPA |
+| Audio | ✅ | media playback and voice calls on the earpiece and the speaker. Calls were silent: 6.18 dropped `android_vh_snd_pcm_check_no_buffer`, so the voice PCM start failed with -EPIPE |
 | Sensors | ⛔ | sensors registry in persist not read yet |
 | Fingerprint | 🟡 | `goodix_fp` loads |
 | Speakers (aw88261) | 🟡 | both amps answer (chip id 2113) |
@@ -106,6 +106,7 @@ Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 | SIGILL in odex, dex2oat crashes | UFS DMA without Qualcomm's fastmap | `IOMMU_IO_PGTABLE_FAST=y` |
 | zygote restart loop | no `/dev/ashmem` (Rust only on 6.18) | `CONFIG_RUST`, ashmem, Rust Binder |
 | Camera refcount crash | `cam_smmu` double put of a dma-buf | `get_dma_buf` |
+| Silent calls (voice PCM start -EPIPE) | the no-buffer vendor hook is gone in ACK 6.18 | hook restored in the kernel, registered in `lahaina.c` |
 | Camera ICP init -110, black preview | HFI queues in cached memory | uncached system heap in `cam_mem_mgr` |
 | WPSS fatal error after mode request | WLAN IOVAs outside the firmware's window | reserved regions back (453892b) |
 | No `rmnet_data` links (-ENOMEM) | datarmnet built against the `ipa.h` stubs | `CONFIG_IPA3` for datarmnet |
@@ -113,7 +114,7 @@ Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 ## Next
 
 1. Retest Wi-Fi and the camera ICP with the reserved regions back.
-2. Voice calls; the Gatekeeper guard prop for test boots.
+2. The Gatekeeper guard prop for test boots; CDSP; sensors.
 3. CDSP firmware and the sensors registry.
 4. Test the daily image on the real /data, then the
    `device_xiaomi_redwood-kernel-6.18` prebuilt and a setup branch for
