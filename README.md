@@ -16,8 +16,8 @@ and [STATUS.md](STATUS.md).
 
 ## Status tracker
 
-Last updated 2026-11-12. AOSPA has booted to the home screen on 6.18 as a
-RAM boot with /data on tmpfs; the rest is tested in the bring-up USB shell.
+Last updated 2026-11-12. AOSPA runs on 6.18 on slot b with the real /data
+and KernelSU Next root; the rest is tested in the bring-up USB shell.
 
 Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 ⬜ not started
@@ -53,8 +53,8 @@ Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 | ADSP, WPSS | ✅ | boot from `/vendor/firmware_mnt` |
 | CDSP | ⛔ | `cdsp.mdt` not found when it is requested in first stage |
 | Bluetooth | ✅ | works in AOSPA |
-| Wi-Fi (qcacld, icnss2) | 🟡 | built and loads; the WPSS crashed on the first copy engine access (`ccpm_pcie.c: invalid PCIe read access`) because the WLAN IOVA range started at 0 instead of the 0xa0000000 window. Fixed in the kernel (453892b), retest pending |
-| Mobile data (IPA, rmnet) | ⛔ | IPA and rmnet load, no `rmnet_data` links: netmgrd's `RTM_NEWLINK` was denied by netlink xperm checks; device tree policy and the kernel fallback are in, still no links |
+| Wi-Fi (qcacld, icnss2) | 🟡 | firmware boots and reaches mission mode (`FW ready event received`). The WPSS used to crash on the first copy engine access because the WLAN IOVA range started at 0 instead of the 0xa0000000 window (fixed in 453892b); connecting not tested yet |
+| Mobile data (IPA, rmnet) | ✅ | works on both SIMs. datarmnet was built without `CONFIG_IPA3`, so `ipa_register_notifier()` was the failing stub and every `rmnet_data` link failed with -ENOMEM; netmgrd's `RTM_NEWLINK` also needs `redwood.nlmsg_legacy` (or the device tree's xperm rules) |
 | Camera | ⛔ | ICP firmware prints its version, then `cam_icp_mgr_send_fw_init` times out (-110); may be the same missing reserved regions as Wi-Fi, retest pending |
 | Video (msm-vidc) | ✅ | codec sessions open: empty vb2 wait hooks, `V4L2_FL_USES_V4L2_FH` kept, controls wired to the instance |
 | Audio | 🟡 | lahaina modules load, sound card registers; not checked in AOSPA |
@@ -73,7 +73,7 @@ Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 | Item | State | Notes |
 |---|---|---|
 | AOSPA on 6.18 (RAM boot) | ✅ | home screen, adb; first boot on an empty /data takes about 6 minutes |
-| AOSPA on 6.18 with the real /data | ⬜ | `pack-daily618.sh` builds the image; not tested yet |
+| AOSPA on 6.18 with the real /data | ✅ | slot b boots it with `pack-daily618.sh`'s image; KernelSU Next v3.4.2 root with its `kernelsu.ko` rebuilt for this kernel (vermagic, ACK VFS namespace import) |
 | Flashable build from the device tree | ⬜ | needs a `device_xiaomi_redwood-kernel-6.18` prebuilt |
 
 ## Test rules
@@ -107,11 +107,12 @@ Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
 | zygote restart loop | no `/dev/ashmem` (Rust only on 6.18) | `CONFIG_RUST`, ashmem, Rust Binder |
 | Camera refcount crash | `cam_smmu` double put of a dma-buf | `get_dma_buf` |
 | WPSS fatal error after mode request | WLAN IOVAs outside the firmware's window | reserved regions back (453892b) |
+| No `rmnet_data` links (-ENOMEM) | datarmnet built against the `ipa.h` stubs | `CONFIG_IPA3` for datarmnet |
 
 ## Next
 
 1. Retest Wi-Fi and the camera ICP with the reserved regions back.
-2. Mobile data: get the `RTM_NEWLINK` error from netmgrd and rmnet.
+2. Camera black screen; voice calls; the Gatekeeper guard prop for test boots.
 3. CDSP firmware and the sensors registry.
 4. Test the daily image on the real /data, then the
    `device_xiaomi_redwood-kernel-6.18` prebuilt and a setup branch for
