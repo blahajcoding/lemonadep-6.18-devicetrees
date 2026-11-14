@@ -1,140 +1,134 @@
-# redwood on Linux 6.18
+# redwood devicetrees for Linux 6.18
 
-Porting the Redmi Note 12 Pro 5G / POCO X5 Pro 5G (redwood, SM7325) from
-Qualcomm's 6.12 kernel platform to Android Common Kernel `android17-6.18`
-(6.18.33).
+The devicetrees for the **Redmi Note 12 Pro 5G / POCO X5 Pro 5G** (`redwood`,
+SM7325 "yupik") on Linux 6.18. This repo also tracks the status of the 6.18 port.
 
-| Repository | What it holds |
+- `qcom/yupik.dts` builds the SoC base dtb (`yupik.dtb`).
+- `qcom/redwood-overlay.dtso` builds redwood's board overlay (`dtbo.img`).
+
+The `redwood-*.dtsi` files describe the board hardware: audio, camera, touch,
+fingerprint, haptics, IR, NFC, Wi-Fi, Bluetooth, IPA, video, FastRPC, crypto,
+thermal and the two M20 panel variants (dynamic refresh at 120, 110, 100, 90 and
+60 Hz).
+
+## Repositories
+
+| Repository | Contents |
 |---|---|
-| [redwood-6.18-kernel](https://github.com/suvojeet-sengupta/redwood-6.18-kernel) | ACK `android17-6.18` + Qualcomm's common delta + soc-repo, redwood fixes |
-| [redwood-6.18-modules](https://github.com/suvojeet-sengupta/redwood-6.18-modules) | vendor trees (display, GPU, audio, securemsm, mm-drivers, camera, video, wlan, data), redwood drivers, bring-up tools |
-| [device_xiaomi_redwood_clo `6.18`](https://github.com/suvojeet-sengupta/device_xiaomi_redwood_clo/tree/6.18) | the Android device tree for 6.18 (`6.18-setup`: manifest and build scripts) |
-| [device_xiaomi_redwood-kernel-6.18](https://github.com/suvojeet-sengupta/device_xiaomi_redwood-kernel-6.18) | the prebuilt kernel, modules, dtb and dtbo for ROM builds |
-| redwood-6.18-devicetrees (this one) | the redwood devicetree, as carried over from 6.12 |
+| [redwood-6.18-kernel](https://github.com/suvojeet-sengupta/redwood-6.18-kernel) | The kernel: ACK `android17-6.18` + `-lts` (6.18.39) with Qualcomm's lahaina/yupik platform |
+| [redwood-6.18-modules](https://github.com/suvojeet-sengupta/redwood-6.18-modules) | Vendor and redwood modules, build and bring-up scripts |
+| **redwood-6.18-devicetrees** (this one) | dtb, dtbo and the status below |
+| [device_xiaomi_redwood-kernel-6.18](https://github.com/suvojeet-sengupta/device_xiaomi_redwood-kernel-6.18) | Ready-made Image, modules, dtb and dtbo for ROM builds |
+| [device_xiaomi_redwood](https://github.com/suvojeet-sengupta/device_xiaomi_redwood/tree/seventeen) | Android device tree, PixelOS 17 (`seventeen`, manifest in `seventeen-setup`) |
+| [device_xiaomi_redwood_clo](https://github.com/suvojeet-sengupta/device_xiaomi_redwood_clo/tree/6.18) | Android device tree, AOSPA (`6.18`, manifest in `6.18-setup`) |
 
-The 6.12 notes this port started from are in [README-6.12.md](README-6.12.md)
-and [STATUS.md](STATUS.md).
+## Building
 
-## Status tracker
+The dtb and dtbo are preprocessed with Clang and compiled with the kernel's
+`dtc`, so build the kernel first. Then run:
 
-Last updated 2026-11-12. AOSPA runs on 6.18 on slot b with the real /data
-and KernelSU Next root; the rest is tested in the bring-up USB shell.
+```sh
+export R=~/r618    # holds redwood-6.18-kernel, out/ and this repository
+bash $R/redwood-6.18-modules/bringup/build-dt.sh
+python3 mkdtboimg.py create dtbo.img $R/out-dt/redwood-overlay.dtbo
+```
 
-Legend: ✅ works · 🟡 loads/probes, not proven end to end · ⛔ broken ·
-⬜ not started
+The output is `$R/out-dt/yupik.dtb` and `redwood-overlay.dtbo`.
+`mkdtboimg.py` is AOSP's, from `system/libufdt/utils/src`.
+
+## Status
+
+Last updated 2026-11-15, on 6.18.39 with PixelOS 17 as the daily system and
+KernelSU root.
+
+Legend: ✅ works · 🟡 partly working or not proven end to end · ⛔ broken or kept off · ⬜ not started
 
 ### Kernel and core
 
 | Item | State | Notes |
 |---|---|---|
-| Boot to init | ✅ | GKI built-ins kept, `lahaina_perf` only shapes modules |
-| UFS storage | ✅ | `ufs-qcom` first; needs `IOMMU_IO_PGTABLE_FAST` (without fastmap, apps read stale zeros: SIGILL in odex, dex2oat crashes) |
-| USB gadget (ACM shell) | ✅ | `/dev/ttyACM*` on the PC, `rsh618.py` drives it; the shell reopens ttyGS0 after `loadall` resets USB |
-| Modules | ✅ | `loadall` loads 181 with 0 failures |
-| arm-smmu | ✅ | `pgsize_bitmap` set on the domain; device tree reserved regions work again (`of_iommu_get_resv_regions` fixed for 6.18's `of_match_bus`); TLB flushed on every unmap with `iommu.strict=1` until the deferred path is fixed |
-| Rust | ✅ | rustc 1.88.0, bindgen 0.72.1; ashmem (Rust only on 6.18) and the Rust Binder module; `MODVERSIONS` off |
-| SELinux netlink | 🟡 | `redwood.nlmsg_legacy` falls back to the pre-xperm netlink check when vendor policy lacks `allowxperm` rules |
-| qcom-pdc | ✅ | probe wrapper fixes a CFI type mismatch |
-| Splash console | ✅ | off by default, `redwood_splashcon.enable=1` for bring-up; stops and unmaps when `msm_drm` loads |
-| Logdump | ✅ | `bootlog.ko` writes the kernel log through bios (SELinux can't stop it), `logcap.ko` adds logcat and boot phases |
-| WALT | ✅ | removed, plain EAS |
-| Watchdog | ⬜ | `qcom_wdt_core`/`qcom_soc_wdt` left out during bring-up |
-| CoreSight | ⛔ | `coresight-funnel` resets the SoC; kept out of `loadall` |
-| LPM governor | ⛔ | `qcom_lpm` panics; kept out of `loadall` |
+| Boot | ✅ | GKI built-ins, 311 modules, all load |
+| UFS storage | ✅ | Needs `IOMMU_IO_PGTABLE_FAST`. Without fastmap, apps read stale zeros (SIGILL in odex, dex2oat crashes) |
+| arm-smmu | ✅ | `pgsize_bitmap` set on the domain, reserved regions restored (453892b). The TLB is flushed on every unmap (`iommu.strict=1`) until the deferred path is fixed |
+| Rust | ✅ | ashmem (Rust-only on 6.18) and the Rust Binder (`binder.impl=rust`) |
+| SELinux netlink | ✅ | The Android device trees carry the xperm rules. `redwood.nlmsg_legacy` stays as a fallback for older vendor policy |
+| Deep sleep | ✅ | s2idle reaches AOSS, CX and DDR sleep (`qcom_stats`) |
+| cpuidle | ✅ | TEO with the PSCI cluster domains |
+| `qcom_lpm` governor | ⛔ | Panics, so it isn't loaded. TEO replaces it |
+| Scheduler | ✅ | WALT removed: EAS, schedutil, fast PELT |
+| KernelSU | ✅ | The LKM loads (the GKI KMI is kept) |
+| Watchdog | ⬜ | `qcom_wdt_core` and `qcom_soc_wdt` left out |
+| CoreSight | ⛔ | `coresight-funnel` resets the SoC, so it's kept out |
+| `tz_log` | ⛔ | Probing it resets the phone (same on 6.12), so it isn't bundled |
 
 ### Peripherals
 
 | Item | State | Notes |
 |---|---|---|
-| Display (msm_drm) | ✅ | AOSPA UI on the M20 panel, 1080x2400 |
-| GPU (kgsl) | ✅ | renders the AOSPA UI |
-| Touch | ✅ | Goodix Berlin-D (mainline driver), usable in AOSPA |
-| Charging | ✅ | status bar shows charging |
-| Modem (MPSS) | ✅ | boots, baseband version shown, registers on the network |
-| ADSP, WPSS | ✅ | boot from `/vendor/firmware_mnt` |
-| CDSP | ⛔ | `cdsp.mdt` not found when it is requested in first stage |
-| Bluetooth | ✅ | works in AOSPA |
-| Wi-Fi (qcacld, icnss2) | 🟡 | firmware boots and reaches mission mode (`FW ready event received`). The WPSS used to crash on the first copy engine access because the WLAN IOVA range started at 0 instead of the 0xa0000000 window (fixed in 453892b); connecting not tested yet |
-| Mobile data (IPA, rmnet) | ✅ | works on both SIMs. datarmnet was built without `CONFIG_IPA3`, so `ipa_register_notifier()` was the failing stub and every `rmnet_data` link failed with -ENOMEM; netmgrd's `RTM_NEWLINK` also needs `redwood.nlmsg_legacy` (or the device tree's xperm rules) |
-| Camera | ✅ | preview works. The HFI queues came from the cached system heap, so the non-coherent ICP never saw its init command (-110); and LRME, which the HAL needs, was not built |
-| Video (msm-vidc) | ✅ | codec sessions open: empty vb2 wait hooks, `V4L2_FL_USES_V4L2_FH` kept, controls wired to the instance |
-| Audio | ✅ | media playback and voice calls on the earpiece and the speaker. Calls were silent: 6.18 dropped `android_vh_snd_pcm_check_no_buffer`, so the voice PCM start failed with -EPIPE |
-| Sensors | ⛔ | sensors registry in persist not read yet |
-| Fingerprint | 🟡 | `goodix_fp` loads |
-| Speakers (aw88261) | 🟡 | both amps answer (chip id 2113) |
-| Haptics | 🟡 | `aw8697-haptic` loads |
-| IR blaster | ✅ | `ir-spi` registers `rc0` |
-| Crypto (qce, qcedev, qcrypto, qrng) | ✅ | load, CE BAM up |
-| qseecom / smcinvoke | ✅ | keymaster and gatekeeper work in AOSPA |
-| `tz_log` | ⛔ | probing it resets the phone (same on 6.12); not bundled |
-| NFC | ⬜ | not built |
+| Display | ✅ | M20 panel, 1080x2400, up to 120 Hz |
+| GPU | ✅ | Adreno 642L, OpenGL ES and Vulkan (the UI renders with Vulkan) |
+| Touch | ✅ | Goodix Berlin-D (mainline driver) with double tap to wake |
+| Remote processors | ✅ | ADSP, CDSP, MPSS and WPSS all run |
+| Modem, mobile data | ✅ | Both SIMs. datarmnet needs `CONFIG_IPA3`, and IPA uses a level-triggered IRQ so the SoC can sleep |
+| Wi-Fi | ✅ | WCN6750, qcacld-3.0 |
+| Bluetooth | ✅ | |
+| Audio | ✅ | Media, calls on the earpiece and the speaker, Dolby |
+| Speaker protection | 🟡 | Both AW88261 amps play. The VI feedback path fails to start (AFE port 0x5, -131) |
+| Camera | ✅ | Photo, video and 120 fps slow motion |
+| Camera, 240 fps | 🟡 | In progress |
+| Video codecs | ✅ | msm-vidc sessions for the vendor Codec2 components |
+| Sensors | ✅ | 50 sensors |
+| Fingerprint | ✅ | |
+| Haptics | ✅ | AW8697 |
+| IR blaster | ✅ | `ir-spi` |
+| Charging | ✅ | |
+| Crypto, qseecom, smcinvoke | ✅ | Keymaster and Gatekeeper work |
+| NFC | 🟡 | `nxp-nci` loads. Untested: the test unit is an India model without an NFC chip |
 
 ### Android
 
 | Item | State | Notes |
 |---|---|---|
-| AOSPA on 6.18 (RAM boot) | ✅ | home screen, adb; first boot on an empty /data takes about 6 minutes |
-| AOSPA on 6.18 with the real /data | ✅ | slot b boots it with `pack-daily618.sh`'s image; KernelSU Next v3.4.2 root with its `kernelsu.ko` rebuilt for this kernel (vermagic, ACK VFS namespace import) |
-| Flashable build from the device tree | 🟡 | [`device_xiaomi_redwood-kernel-6.18`](https://github.com/suvojeet-sengupta/device_xiaomi_redwood-kernel-6.18) prebuilt, device tree `6.18` (default branch) and `6.18-setup` are ready; no ROM built with them yet |
+| PixelOS 17 | ✅ | Daily system, built from the prebuilt and `device_xiaomi_redwood` (`seventeen`) |
+| AOSPA | ✅ | Built from `device_xiaomi_redwood_clo` (`6.18`) |
 
-## Test rules
+## Bugs fixed along the way
 
-- Slot b runs the daily AOSPA on 6.12. Slot a is the test slot.
-- Prefer `fastboot boot` (RAM boot), so nothing persists. Set slot b
-  active again afterwards.
-- AOSPA test boots run with /data on tmpfs, and `testguard` holds userdata
-  and misc read-only; metadata and persist are mounted `ro,noload`, qmcs
-  `ro`.
-- **Gatekeeper lives in the TEE and both slots share it.** On an empty
-  /data, gatekeeperd sees no `/data/misc/gatekeeper/.coldboot` and wipes
-  every enrolled user once setup completes or a credential is set, and the
-  daily slot then rejects the right PIN. That happened on 2026-11-12 and the
-  daily data could not be recovered. Every Android test boot with a
-  non-daily /data must create `.coldboot` or set `ro.gsid.image_running=1`,
-  and nobody finishes setup or sets a lock in a test boot.
-
-## Crashes found so far
-
-| When | Cause | Fix |
+| Symptom | Cause | Fix |
 |---|---|---|
-| Reset during `loadall` | `coresight-funnel` | left out of `modules.all` |
-| Panic | `qcom_lpm` governor | left out of `modules.all` |
-| Reset on module load | `tz_log_dlkm` probe | not bundled |
-| Oops while arm-smmu registers | `of_iommu_get_resv_regions` used a NULL translation | fixed in kernel (453892b) |
-| Stale TLB permission fault | arm-smmu deferred invalidate | TLB flush on unmap (workaround) |
-| CFI panic | `qcom-pdc` probe type | probe wrapper |
-| Oopses at `0xff000000` everywhere | splash console kept drawing into freed splash memory | stop and unmap on `msm_drm` |
+| Oops while arm-smmu registers | `of_iommu_get_resv_regions` used a NULL translation | Kernel 453892b |
+| WPSS fatal error after the mode request | WLAN IOVAs outside the firmware's window | Reserved regions back (453892b) |
 | SIGILL in odex, dex2oat crashes | UFS DMA without Qualcomm's fastmap | `IOMMU_IO_PGTABLE_FAST=y` |
-| zygote restart loop | no `/dev/ashmem` (Rust only on 6.18) | `CONFIG_RUST`, ashmem, Rust Binder |
-| Camera refcount crash | `cam_smmu` double put of a dma-buf | `get_dma_buf` |
-| Silent calls (voice PCM start -EPIPE) | the no-buffer vendor hook is gone in ACK 6.18 | hook restored in the kernel, registered in `lahaina.c` |
-| Camera ICP init -110, black preview | HFI queues in cached memory | uncached system heap in `cam_mem_mgr` |
-| WPSS fatal error after mode request | WLAN IOVAs outside the firmware's window | reserved regions back (453892b) |
+| zygote restart loop | No `/dev/ashmem` (Rust-only on 6.18) | `CONFIG_RUST`, ashmem, Rust Binder |
+| CFI panic | `qcom-pdc` probe type | Probe wrapper |
+| Oopses at `0xff000000` | The splash console kept drawing into freed splash memory | Stop and unmap when `msm_drm` loads |
+| Silent calls (voice PCM start -EPIPE) | The no-buffer vendor hook is gone in ACK 6.18 | Hook restored, registered in `lahaina.c` |
+| Sound cut out every 6 s | ACK moved the ASoC no-BE check to open, so the sound trigger HAL's Listen PCM failed and the audio HAL restarted | Reverted (6fd45bed80d8) |
+| Camera ICP init -110, black preview | HFI queues in cached memory | Uncached system heap in `cam_mem_mgr` |
+| Camera refcount crash | `cam_smmu` put a dma-buf twice | `get_dma_buf` |
 | No `rmnet_data` links (-ENOMEM) | datarmnet built against the `ipa.h` stubs | `CONFIG_IPA3` for datarmnet |
+| SoC never reached deep sleep | The CPU cluster domain never synced, and IPA kept the SoC awake | `qcom,lpm-cluster-dev`, `fw_devlink.sync_state=timeout`, level-triggered IPA IRQ |
+| USB dropped once on plug-in | UCSI connector changes handled in the RX worker | Kernel 82821c258222 |
+| Reset during module load | `coresight-funnel`, `tz_log_dlkm` | Kept out |
+| Panic | `qcom_lpm` governor | Kept out, TEO instead |
 
 ## Next
 
-1. Retest Wi-Fi and the camera ICP with the reserved regions back.
-2. The Gatekeeper guard prop for test boots; CDSP; sensors.
-3. CDSP firmware and the sensors registry.
-4. Test the daily image on the real /data, then the
-   `device_xiaomi_redwood-kernel-6.18` prebuilt and a setup branch for
-   flashable builds.
-5. Fix CoreSight and the LPM panic properly; proper arm-smmu TLB fix.
+1. 240 fps slow motion
+2. Speaker VI feedback
+3. A proper arm-smmu deferred TLB invalidation, instead of a strict flush
+4. CoreSight, the watchdog and the `qcom_lpm` panic
 
-## Building
+## Testing safely
 
-On the build server, under `~/r618`, after `. env.sh` (it puts the clang
-and Rust toolchains in `PATH`; without Rust in `PATH`, Kconfig silently
-turns `CONFIG_RUST` off and ashmem and the Rust Binder with it).
+**Gatekeeper lives in the TEE, and both slots share it.** On an empty /data,
+gatekeeperd finds no `/data/misc/gatekeeper/.coldboot` and wipes every
+enrolled user once setup completes or a credential is set. The other slot
+then rejects the right PIN. Every test boot with a non-daily /data must
+create `.coldboot` or set `ro.gsid.image_running=1`, and must not finish
+setup or set a lock.
 
-Kernel: `$KMAKE Image modules`. Redwood's own drivers:
-`redwood-6.18-modules/bringup/build-redwood618.sh`; vendor modules:
-`build-vendor618.sh` (mm-drivers, display, GPU, securemsm, audio),
-`build-wlan618.sh`, `build-data618.sh`, `build-misc618.sh`.
+The 6.12 notes this port started from are in [README-6.12.md](README-6.12.md)
+and [STATUS.md](STATUS.md).
 
-Test images: `repack618.sh` builds the bring-up shell image and the AOSPA
-RAM boot image; `pack-daily618.sh <boot.img> <vendor_boot.img>` builds a
-6.18 boot image for a slot's own system and /data.
-
-Written and maintained by Suvojeet Sengupta.
+Ported and maintained by Suvojeet Sengupta.
