@@ -222,6 +222,8 @@
  */
 &battery_charger {
 	qcom,xiaomi-battery-props;
+	/* No wireless charging coil, as in the 5.4 devicetree */
+	qcom,wireless-charging-not-supported;
 	/*
 	 * Xiaomi's charger firmware is told when the screen goes off, and
 	 * charges harder then. Either panel may be fitted.
