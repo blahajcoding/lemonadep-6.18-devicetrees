@@ -4,10 +4,6 @@
 	i2c4 = "/soc/qcom,qupv3_2_geni_se@8c0000/i2c@894000";
 };
 
-&{/chosen} {
-	bootargs = "log_buf_len=1M earlycon=msm_geni_serial,0x98c000 rcupdate.rcu_expedited=1 rcu_nocbs=0-7";
-};
-
 /* Keep the stock lemonadep ramoops layout so early-boot failures are recoverable. */
 &reserved_memory {
 	ramoops: ramoops@e9700000 {

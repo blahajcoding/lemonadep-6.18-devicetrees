@@ -19,3 +19,17 @@
 	oem,project-codename = "lemonadep", "lemonadept";
 	oem,hw-id = <11>;
 };
+/* Mirror the identity properties into the runtime DT; the root copy above
+   remains available to the bootloader for OPLUS dtbo selection. */
+&{/} {
+	model = "OnePlus 9 Pro (lemonadep, T0)";
+	compatible = "oneplus,lemonadep", "oneplus,lemonadept",
+		     "qcom,lahaina-mtp", "qcom,lahaina", "qcom,sm8350", "qcom,mtp";
+	qcom,msm-id = <415 0x20001>, <456 0x20001>, <501 0x20001>;
+	qcom,board-id = <0x10008 0>;
+
+	oplus,dtsi_no = <19815>;
+	oem,project-id = <0x19815 0x2085A>;
+	oem,project-codename = "lemonadep", "lemonadept";
+	oem,hw-id = <11>;
+};
