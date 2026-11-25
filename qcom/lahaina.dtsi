@@ -3340,6 +3340,50 @@ soc: soc { };
 		qcom,bt-vdd-asd-config = <2800000 2800000 0 1>;
 	};
 
+	wlan: qcom,cnss-qca6490@b0000000 {
+		compatible = "qcom,cnss-qca6490";
+		reg = <0xb0000000 0x10000>,
+		      <0xb2e5510 0x690>;
+		reg-names = "smmu_iova_ipa", "tcs_cmd";
+		wlan-en-gpio = <&tlmm 64 0>;
+		qcom,bt-en-gpio = <&tlmm 65 0>;
+		qcom,sw-ctrl-gpio = <&tlmm 153 0>;
+		pinctrl-names = "wlan_en_active", "wlan_en_sleep";
+		pinctrl-0 = <&cnss_wlan_en_active>;
+		pinctrl-1 = <&cnss_wlan_en_sleep>;
+		qcom,wlan-rc-num = <0>;
+		qcom,wlan-ramdump-dynamic = <0x420000>;
+		qcom,wlan-cbc-enabled;
+		qcom,tcs_offset_int_pow_amp_vreg = <0x4d0>;
+		use-pm-domain;
+		cnss-enable-self-recovery;
+
+		vdd-wlan-aon-supply = <&S2E>;
+		qcom,vdd-wlan-aon-config = <950000 952000 0 0 1>;
+		vdd-wlan-dig-supply = <&S11B>;
+		qcom,vdd-wlan-dig-config = <950000 952000 0 0 1>;
+		vdd-wlan-io-supply = <&S10B>;
+		qcom,vdd-wlan-io-config = <1800000 1800000 0 0 1>;
+		vdd-wlan-rfa1-supply = <&S1C>;
+		qcom,vdd-wlan-rfa1-config = <1880000 1880000 0 0 1>;
+		vdd-wlan-rfa2-supply = <&S12B>;
+		qcom,vdd-wlan-rfa2-config = <1350000 1350000 0 0 1>;
+		wlan-ant-switch-supply = <&L7E>;
+		qcom,wlan-ant-switch-config = <2800000 2800000 0 0 0>;
+
+		interconnects =
+			<&aggre2_noc MASTER_PCIE_0 &aggre2_noc SLAVE_ANOC_PCIE_GEM_NOC>,
+			<&gem_noc MASTER_ANOC_PCIE_GEM_NOC &mc_virt SLAVE_EBI1>;
+		interconnect-names = "pcie_to_memnoc", "memnoc_to_ddr";
+		qcom,icc-path-count = <2>;
+		qcom,bus-bw-cfg-count = <7>;
+		qcom,bus-bw-cfg =
+			<0 0>, <2250 390000>, <7500 390000>, <30000 790000>,
+			<100000 790000>, <175000 1600000>, <7500 390000>,
+			<0 0>, <2250 1804800>, <7500 1804800>, <30000 1804800>,
+			<100000 1804800>, <175000 6220800>, <7500 2188800>;
+	};
+
 	wil6210: qcom,wil6210 {
 		compatible = "qcom,wil6210";
 		qcom,pcie-parent = <&pcie1>;
@@ -3391,6 +3435,31 @@ soc: soc { };
 #include "lahaina-pcie.dtsi"
 #include "msm-qvr-external.dtsi"
 #include "lahaina-debug.dtsi"
+
+&pcie0_rp {
+	#address-cells = <3>;
+	#size-cells = <2>;
+
+	cnss_pci: cnss_pci {
+		reg = <0 0 0 0 0>;
+		qcom,iommu-group = <&cnss_pci_iommu_group>;
+		memory-region = <&cnss_wlan_mem>, <&cnss_pci0_iova>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		cnss_pci_iommu_group: cnss_pci_iommu_group {
+			qcom,iommu-dma = "fastmap";
+			qcom,iommu-pagetable = "coherent";
+			qcom,iommu-faults = "stall-disable", "HUPCF", "no-CFRE",
+					    "non-fatal";
+		};
+
+		cnss_pci0_iova: cnss_pci0_iommu_region_partition {
+			iommu-addresses = <&cnss_pci 0x0 0x0 0x0 0x0 0xa0000000>,
+					  <&cnss_pci 0x0 0x0 0xb0000000 0x0 0x50000000>;
+		};
+	};
+};
 
 &pcie1_rp {
 	#address-cells = <5>;

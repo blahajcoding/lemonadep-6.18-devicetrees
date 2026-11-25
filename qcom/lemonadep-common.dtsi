@@ -89,6 +89,15 @@
 	status = "disabled";
 };
 
+&wlan {
+	use-nv-mac;
+	qcom,vdd-wlan-rfa1-config = <1880000 2000000 0 0 1>;
+};
+
+&bluetooth {
+	qcom,bt-vdd-rfa1-config = <1880000 2000000 0 1>;
+};
+
 /* Board connectivity fixes from the stock lemonadep overlay. pcie1 is the
  * unused second PCIe controller on this board; usb1 and its MTP extcon wiring
  * are absent. The primary port is limited to SuperSpeed, matching stock. */
