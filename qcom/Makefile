@@ -407,7 +407,9 @@ NOAPQ_LAHAINA_BOARDS += \
 		lahaina-mtp-hsp-pro-overlay.dtbo \
 		lahaina-qrd-hsp-pro-overlay.dtbo \
 		lahaina-mtp-v2-overlay.dtbo \
-		lahaina-mtp-v2.1-overlay.dtbo
+		lahaina-mtp-v2.1-overlay.dtbo \
+		lemonadep-overlay.dtbo \
+		lemonadep-t0-overlay.dtbo
 
 lahaina-dtb-$(CONFIG_ARCH_LAHAINA) += \
 	$(call add-overlays, $(NOAPQ_LAHAINA_BOARDS),$(LAHAINA_BASE_DTB)) \

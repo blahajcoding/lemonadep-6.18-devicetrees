@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/* OnePlus 9 Pro T0 hardware revision overlay; see lemonadep-overlay.dtso. */
+
+/dts-v1/;
+/plugin/;
+
+#include "lahaina-mtp.dtsi"
+
+/ {
+	model = "OnePlus 9 Pro (lemonadep, T0)";
+	compatible = "oneplus,lemonadep", "oneplus,lemonadept",
+		     "qcom,lahaina-mtp", "qcom,lahaina", "qcom,sm8350", "qcom,mtp";
+	qcom,msm-id = <415 0x20001>, <456 0x20001>, <501 0x20001>;
+	qcom,board-id = <0x10008 0>;
+
+	oplus,dtsi_no = <19815>;
+	oem,project-id = <0x19815 0x2085A>;
+	oem,project-codename = "lemonadep", "lemonadept";
+	oem,hw-id = <11>;
+
+	aliases {
+		i2c4 = "/soc/qcom,qupv3_2_geni_se@8c0000/i2c@894000";
+	};
+
+	chosen {
+		bootargs = "log_buf_len=1M earlycon=msm_geni_serial,0x98c000 rcupdate.rcu_expedited=1 rcu_nocbs=0-7";
+	};
+};
+
+&reserved_memory {
+	ramoops: ramoops@e9700000 {
+		compatible = "ramoops";
+		reg = <0x0 0xe9700000 0x0 0x005b8000>;
+		record-size = <0x40000>;
+		console-size = <0x40000>;
+		ftrace-size = <0x200000>;
+		pmsg-size = <0x200000>;
+		devinfo-size = <0x08000>;
+		dumpinfo-size = <0x08000>;
+		rsv01info-size = <0x08000>;
+		rsv02info-size = <0x08000>;
+		rsv03info-size = <0x08000>;
+		rsv04info-size = <0x08000>;
+		rsv05info-size = <0x08000>;
+		ecc-size = <0x0>;
+	};
+};
