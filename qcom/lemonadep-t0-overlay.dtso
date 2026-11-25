@@ -8,10 +8,8 @@
 #include "lemonadep-common.dtsi"
 
 / {
-	model = "OnePlus 9 Pro (lemonadep, T0)";
-	compatible = "oneplus,lemonadep", "oneplus,lemonadept",
-		     "qcom,lahaina-mtp", "qcom,lahaina", "qcom,sm8350", "qcom,mtp";
-	qcom,msm-id = <415 0x20001>, <456 0x20001>, <501 0x20001>;
+	model = "Qualcomm Technologies, Inc. Lahaina MTP lemonadep t0";
+	compatible = "qcom,lahaina-mtp", "qcom,lahaina", "qcom,mtp";
 	qcom,board-id = <0x10008 0>;
 
 	oplus,dtsi_no = <19815>;
@@ -22,10 +20,8 @@
 /* Mirror the identity properties into the runtime DT; the root copy above
    remains available to the bootloader for OPLUS dtbo selection. */
 &{/} {
-	model = "OnePlus 9 Pro (lemonadep, T0)";
-	compatible = "oneplus,lemonadep", "oneplus,lemonadept",
-		     "qcom,lahaina-mtp", "qcom,lahaina", "qcom,sm8350", "qcom,mtp";
-	qcom,msm-id = <415 0x20001>, <456 0x20001>, <501 0x20001>;
+	model = "Qualcomm Technologies, Inc. Lahaina MTP lemonadep t0";
+	compatible = "qcom,lahaina-mtp", "qcom,lahaina", "qcom,mtp";
 	qcom,board-id = <0x10008 0>;
 
 	oplus,dtsi_no = <19815>;
