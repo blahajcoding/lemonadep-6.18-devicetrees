@@ -1,0 +1,65 @@
+/* Shared lemonadep overlay content for the initial safe hardware scaffold. */
+
+&{/aliases} {
+	i2c4 = "/soc/qcom,qupv3_2_geni_se@8c0000/i2c@894000";
+};
+
+&{/chosen} {
+	bootargs = "log_buf_len=1M earlycon=msm_geni_serial,0x98c000 rcupdate.rcu_expedited=1 rcu_nocbs=0-7";
+};
+
+/* Keep the stock lemonadep ramoops layout so early-boot failures are recoverable. */
+&reserved_memory {
+	ramoops: ramoops@e9700000 {
+		compatible = "ramoops";
+		reg = <0x0 0xe9700000 0x0 0x005b8000>;
+		record-size = <0x40000>;
+		console-size = <0x40000>;
+		ftrace-size = <0x200000>;
+		pmsg-size = <0x200000>;
+		devinfo-size = <0x08000>;
+		dumpinfo-size = <0x08000>;
+		rsv01info-size = <0x08000>;
+		rsv02info-size = <0x08000>;
+		rsv03info-size = <0x08000>;
+		rsv04info-size = <0x08000>;
+		rsv05info-size = <0x08000>;
+		ecc-size = <0x0>;
+	};
+};
+
+/*
+ * lahaina-mtp.dtsi is Qualcomm's reference board, not lemonadep. Keep its
+ * PMIC/UFS baseline, but disable board devices that stock lemonadep either
+ * disables or wires differently. These blocks remain deferred until their
+ * OnePlus drivers and userspace ABIs are ported.
+ */
+&soc {
+	qcom,qbt_handler {
+		status = "disabled";
+	};
+
+	extcon_usb1 {
+		status = "disabled";
+	};
+
+	gpio_keys {
+		vol_up {
+			label = "volume_down";
+			linux,code = <KEY_VOLUMEDOWN>;
+		};
+	};
+};
+
+&sdhc_2 {
+	status = "disabled";
+};
+
+&wil6210 {
+	status = "disabled";
+};
+
+&qupv3_se15_i2c {
+	status = "disabled";
+};
+
