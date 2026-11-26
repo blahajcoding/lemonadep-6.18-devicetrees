@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/* OnePlus 9 Pro Synaptics S3908 touch bring-up. */
+
+&tlmm {
+	pmx_ts_int_active {
+		ts_int_active: ts_int_active {
+			mux {
+				pins = "gpio23";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio23";
+				drive-strength = <8>;
+				bias-disable;
+				input-enable;
+			};
+		};
+	};
+
+	pmx_ts_reset_active {
+		ts_reset_active: ts_reset_active {
+			mux {
+				pins = "gpio22";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio22";
+				drive-strength = <8>;
+				bias-pull-up;
+			};
+		};
+	};
+};
+
+&qupv3_se4_i2c {
+	status = "ok";
+	qcom,i2c-touch-active = "synaptics,tcm-i2c";
+
+	synaptics_tcm@4b {
+		compatible = "synaptics,tcm-i2c";
+		reg = <0x4b>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <23 0x2008>;
+		avdd-supply = <&L3C>;
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_active>;
+		synaptics,pwr-reg-name = "avdd";
+		synaptics,irq-gpio = <&tlmm 23 0x2008>;
+		synaptics,irq-on-state = <0>;
+		synaptics,reset-gpio = <&tlmm 22 0x1>;
+		synaptics,reset-on-state = <0>;
+		synaptics,reset-active-ms = <10>;
+		synaptics,reset-delay-ms = <80>;
+		synaptics,power-gpio = <&tlmm 31 0x1>;
+		synaptics,power-on-state = <1>;
+		synaptics,power-delay-ms = <10>;
+		synaptics,bus-gpio = <&tlmm 197 0x1>;
+		synaptics,ubl-i2c-addr = <0x4b>;
+		synaptics,extend_report;
+		status = "ok";
+	};
+};

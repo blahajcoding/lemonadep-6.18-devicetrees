@@ -48,7 +48,6 @@
 			0x130 /* GSI_RING_BASE_ADDR_L */
 			0x144 /* GSI_RING_BASE_ADDR_H */
 			0x1a4>; /* GSI_IF_STS */
-		usb-role-switch;
 		extcon = <&eud>;
 
 		interconnect-names = "usb-ddr", "usb-ipa", "ddr-usb";

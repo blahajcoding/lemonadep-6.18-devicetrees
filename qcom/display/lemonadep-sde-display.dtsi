@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * lemonadep first-light SDE display integration. This keeps the stock dual
+ * DSI controller/PHY arrangement used by the 1440x3216 Samsung panel, but
+ * only registers one logical primary display connector.
+ */
+#include "dsi-panel-samsung-amb670yf01-dsc-cmd.dtsi"
+#include "dsi-panel-samsung-amb670yf01-o-dsc-cmd.dtsi"
+#include "dsi-panel-samsung_sofef00_m_video.dtsi"
+#include <dt-bindings/clock/qcom,rpmh.h>
+#include <dt-bindings/clock/qcom,dispcc-sm8350.h>
+
+&soc {
+	dsi_panel_pwr_supply: dsi_panel_pwr_supply {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		qcom,panel-supply-entry@0 {
+			reg = <0>;
+			qcom,supply-name = "vddio";
+			qcom,supply-min-voltage = <1800000>;
+			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-enable-load = <60700>;
+			qcom,supply-disable-load = <80>;
+		};
+		qcom,panel-supply-entry@1 {
+			reg = <1>;
+			qcom,supply-name = "vdd";
+			qcom,supply-min-voltage = <3000000>;
+			qcom,supply-max-voltage = <3000000>;
+			qcom,supply-enable-load = <10000>;
+			qcom,supply-disable-load = <0>;
+		};
+	};
+
+	dsi_panel_oplus_optimization_pwr_supply: dsi_panel_oplus_optimization_pwr_supply {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		qcom,panel-supply-entry@0 {
+			reg = <0>;
+			qcom,supply-name = "vddio";
+			qcom,supply-min-voltage = <1800000>;
+			qcom,supply-max-voltage = <1800000>;
+			qcom,supply-enable-load = <60700>;
+			qcom,supply-disable-load = <80>;
+		};
+		qcom,panel-supply-entry@1 {
+			reg = <1>;
+			qcom,supply-name = "vdd";
+			qcom,supply-min-voltage = <3000000>;
+			qcom,supply-max-voltage = <3000000>;
+			qcom,supply-enable-load = <10000>;
+			qcom,supply-disable-load = <0>;
+		};
+	};
+
+	display_panel_avdd: display_gpio_regulator@1 {
+		compatible = "qti-regulator-fixed";
+		regulator-name = "display_panel_avdd";
+		regulator-min-microvolt = <5500000>;
+		regulator-max-microvolt = <5500000>;
+		regulator-enable-ramp-delay = <233>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	sde_wb: qcom,wb-display@0 {
+		compatible = "qcom,wb-display";
+		cell-index = <0>;
+		label = "wb_display";
+	};
+
+	sde_dsi: qcom,dsi-display-primary {
+		compatible = "qcom,dsi-display";
+		label = "primary";
+		qcom,dsi-ctrl = <&mdss_dsi0 &mdss_dsi1>;
+		qcom,dsi-phy = <&mdss_dsi_phy0 &mdss_dsi_phy1>;
+		qcom,mdp = <&mdss_mdp>;
+		qcom,dsi-default-panel = <&dsi_samsung_amb670yf01_dsc_cmd>;
+		qcom,demura-panel-id = <0x0 0x0>;
+	};
+};
+
+&sde_dsi {
+	/*
+	 * The 6.18 5nm PLL registers only byte and DSI clocks as cells 0 and 1
+	 * of each PHY. Keep the MDP clock as a sync-state hold for continuous
+	 * splash handoff, matching the redwood adaptation of this driver.
+	 */
+	clocks = <&mdss_dsi_phy0 0>,
+		 <&mdss_dsi_phy0 1>,
+		 <&dispcc DISP_CC_MDSS_MDP_CLK>;
+	clock-names = "pll_byte_clk0", "pll_dsi_clk0", "mdp_core_clk";
+	pinctrl-names = "panel_active", "panel_suspend", "te1_active", "te1_suspend";
+	pinctrl-0 = <&sde_dsi_active &sde_te_active>;
+	pinctrl-1 = <&sde_dsi_suspend &sde_te_suspend>;
+	pinctrl-2 = <&sde_te1_active>;
+	pinctrl-3 = <&sde_te1_suspend>;
+	qcom,platform-te-gpio = <&tlmm 82 0>;
+	qcom,panel-te-source = <0>;
+	vddio-supply = <&L12C>;
+	vdd-supply = <&L13C>;
+	avdd-supply = <&display_panel_avdd>;
+};
+
+&mdss_mdp {
+	/* No DP connector and no secondary logical connector in the first-light port. */
+	connectors = <&smmu_sde_unsec &smmu_sde_sec &sde_wb &sde_dsi &sde_rscc>;
+};

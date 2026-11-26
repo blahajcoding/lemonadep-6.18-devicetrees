@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * OnePlus 9 Pro (lemonadep, SM8350/Lahaina) board overlay for ACK 6.18.
+ *
+ * This is the initial hardware-identity and memory-layout scaffold. Display,
+ * touch, camera, audio, charging, NFC, fingerprint and sensor nodes are
+ * forward-ported in follow-up changes; see PORTING.md in the kernel tree.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include "lahaina-mtp.dtsi"
+#include "lemonadep-common.dtsi"
+#include "lemonadep-touch.dtsi"
+#include "display/lemonadep-sde-pinctrl.dtsi"
+#include "display/lemonadep-sde.dtsi"
+#include "display/lemonadep-sde-display.dtsi"
+
+&battery_charger {
+	qcom,voltage-soc-fallback;
+	qcom,fuel-gauge = <&bq28z610>;
+};
+
+&qupv3_se2_i2c {
+	status = "ok";
+	qcom,clk-freq-out = <100000>;
+
+	bq28z610: fuel-gauge@55 {
+		compatible = "ti,bq28z610";
+		reg = <0x55>;
+		qcom,device-scope;
+	};
+};
+
+&soc {
+	adsp_loader: qcom,msm-adsp-loader {
+		status = "ok";
+		compatible = "qcom,adsp-loader";
+		qcom,adsp-state = <0>;
+		qcom,rproc-handle = <&adsp_pas>;
+	};
+};
+
+/ {
+	model = "Qualcomm Technologies, Inc. Lahaina MTP lemonadep";
+	compatible = "qcom,lahaina-mtp", "qcom,lahaina", "qcom,mtp";
+	qcom,board-id = <0x10008 0>;
+
+	oplus,dtsi_no = <19815 133210>;
+	oem,project-id = <0x19815 0x2085A 0x20857 0x20858 0x20859>;
+	oem,project-codename = "lemonadep", "lemonadept";
+	oem,hw-id = <12 13 21 22 23 31 32 33>;
+};
+/* Mirror the identity properties into the runtime DT; the root copy above
+   remains available to the bootloader for OPLUS dtbo selection. */
+&{/} {
+	model = "Qualcomm Technologies, Inc. Lahaina MTP lemonadep";
+	compatible = "qcom,lahaina-mtp", "qcom,lahaina", "qcom,mtp";
+	qcom,board-id = <0x10008 0>;
+
+	oplus,dtsi_no = <19815 133210>;
+	oem,project-id = <0x19815 0x2085A 0x20857 0x20858 0x20859>;
+	oem,project-codename = "lemonadep", "lemonadept";
+	oem,hw-id = <12 13 21 22 23 31 32 33>;
+};

@@ -1,0 +1,141 @@
+/* Shared lemonadep overlay content for the initial safe hardware scaffold. */
+
+&{/aliases} {
+	i2c4 = "/soc/qcom,qupv3_2_geni_se@8c0000/i2c@894000";
+};
+
+/* lemonadep memory layout, from the stock OPLUS overlay. removed_mem already
+ * exists in the Lahaina base; the display regions do not in this 6.18 base,
+ * so they are added explicitly. Addresses use the base's two-cell format. */
+&removed_mem {
+	reg = <0x0 0xd8800000 0x0 0x8e00000>;
+};
+
+&dfps_data_memory {
+	reg = <0x0 0xe7000000 0x0 0x0100000>;
+	label = "dfps_data_region";
+};
+
+/* Keep the stock lemonadep ramoops layout so early-boot failures are recoverable. */
+&reserved_memory {
+	splash_memory: splash_region {
+		reg = <0x0 0xe4d00000 0x0 0x02300000>;
+		label = "cont_splash_region";
+	};
+
+	disp_rdump_memory: disp_rdump_region {
+		reg = <0x0 0xe4d00000 0x0 0x00800000>;
+		label = "disp_rdump_region";
+	};
+
+	kboot_uboot_logmem: kboot_uboot_logmem@9fe00000 {
+		reg = <0x0 0x9fe00000 0x0 0x200000>;
+		compatible = "oplus,xbl_uefi_kbootlog";
+		xbluefi-offset = <0x1f7000>;
+		no-map;
+	};
+
+	param_mem: param_mem@ea700000 {
+		reg = <0x0 0xea700000 0x0 0x800000>;
+		label = "param_mem";
+	};
+
+	ramoops: ramoops@e9700000 {
+		compatible = "ramoops";
+		reg = <0x0 0xe9700000 0x0 0x005b8000>;
+		record-size = <0x40000>;
+		console-size = <0x40000>;
+		ftrace-size = <0x200000>;
+		pmsg-size = <0x200000>;
+		devinfo-size = <0x08000>;
+		dumpinfo-size = <0x08000>;
+		rsv01info-size = <0x08000>;
+		rsv02info-size = <0x08000>;
+		rsv03info-size = <0x08000>;
+		rsv04info-size = <0x08000>;
+		rsv05info-size = <0x08000>;
+		ecc-size = <0x0>;
+	};
+};
+
+/*
+ * lahaina-mtp.dtsi is Qualcomm's reference board, not lemonadep. Keep its
+ * PMIC/UFS baseline, but disable board devices that stock lemonadep either
+ * disables or wires differently. These blocks remain deferred until their
+ * OnePlus drivers and userspace ABIs are ported.
+ */
+&soc {
+	qcom,qbt_handler {
+		status = "disabled";
+	};
+
+	extcon_usb1 {
+		status = "disabled";
+	};
+
+	gpio_keys {
+		vol_up {
+			label = "volume_down";
+			linux,code = <KEY_VOLUMEDOWN>;
+		};
+	};
+};
+
+&sdhc_2 {
+	status = "disabled";
+};
+
+&wil6210 {
+	status = "disabled";
+};
+
+&wlan {
+	use-nv-mac;
+	qcom,vdd-wlan-rfa1-config = <1880000 2000000 0 0 1>;
+};
+
+&bluetooth {
+	qcom,bt-vdd-rfa1-config = <1880000 2000000 0 1>;
+};
+
+/* Board connectivity fixes from the stock lemonadep overlay. pcie1 is the
+ * unused second PCIe controller on this board; usb1 and its MTP extcon wiring
+ * are absent. The primary port is limited to SuperSpeed, matching stock. */
+&pcie1 {
+	status = "disabled";
+};
+
+&pcie1_msi {
+	status = "disabled";
+};
+
+&usb2_phy0 {
+	qcom,param-override-seq =
+		<0xe6 0x6c
+		0x0f 0x70
+		0x17 0x74>;
+
+	qcom,param-override-seq-host =
+		<0xe7 0x6c
+		0x0c 0x70
+		0x17 0x74>;
+};
+
+&usb0 {
+	dwc3@a600000 {
+		maximum-speed = "super-speed";
+	};
+};
+
+&usb1 {
+	/delete-property/ extcon;
+	status = "disabled";
+	dwc3@a800000 {
+		status = "disabled";
+	};
+};
+
+&qupv3_se15_i2c {
+	status = "disabled";
+};
+
