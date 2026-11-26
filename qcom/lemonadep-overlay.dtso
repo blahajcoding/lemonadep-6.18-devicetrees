@@ -12,6 +12,35 @@
 
 #include "lahaina-mtp.dtsi"
 #include "lemonadep-common.dtsi"
+#include "lemonadep-touch.dtsi"
+#include "display/lemonadep-sde-pinctrl.dtsi"
+#include "display/lemonadep-sde.dtsi"
+#include "display/lemonadep-sde-display.dtsi"
+
+&battery_charger {
+	qcom,voltage-soc-fallback;
+	qcom,fuel-gauge = <&bq28z610>;
+};
+
+&qupv3_se2_i2c {
+	status = "ok";
+	qcom,clk-freq-out = <100000>;
+
+	bq28z610: fuel-gauge@55 {
+		compatible = "ti,bq28z610";
+		reg = <0x55>;
+		qcom,device-scope;
+	};
+};
+
+&soc {
+	adsp_loader: qcom,msm-adsp-loader {
+		status = "ok";
+		compatible = "qcom,adsp-loader";
+		qcom,adsp-state = <0>;
+		qcom,rproc-handle = <&adsp_pas>;
+	};
+};
 
 / {
 	model = "Qualcomm Technologies, Inc. Lahaina MTP lemonadep";

@@ -336,6 +336,15 @@ soc: soc { };
 	qcom_mem_object {
 		compatible = "qcom,mem-object";
 	};
+
+	android {
+		compatible = "android,firmware";
+
+		vbmeta {
+			compatible = "android,vbmeta";
+			parts = "vbmeta,boot,system,vendor,dtbo,vendor_boot";
+		};
+	};
 };
 
 &reserved_memory {
@@ -739,6 +748,11 @@ soc: soc { };
 			disp_bcm_voter: bcm_voter {
 				compatible = "qcom,bcm-voter";
 				qcom,tcs-wait = <QCOM_ICC_TAG_AMC>;
+			};
+
+			sde_rsc_rpmh {
+				compatible = "qcom,sde-rsc-rpmh";
+				cell-index = <0>;
 			};
 		};
 	};
@@ -3428,6 +3442,7 @@ soc: soc { };
 #include "lahaina-smp2p.dtsi"
 #include "lahaina-dma-heaps.dtsi"
 #include "msm-arm-smmu-lahaina.dtsi"
+#include "gpu/lahaina-gpu.dtsi"
 #include "lahaina-usb.dtsi"
 #include "lahaina-coresight.dtsi"
 #include "lahaina-pm.dtsi"
